@@ -22,7 +22,9 @@ class Subscription {
       id: json['id'] as int,
       name: json['name'] as String,
       price:
-          (json['price'] is int)
+          json['price'] is String
+              ? double.parse(json['price'] as String)
+              : json['price'] is int
               ? (json['price'] as int).toDouble()
               : json['price'] as double,
       billingCycle: json['billing_cycle'] as String,

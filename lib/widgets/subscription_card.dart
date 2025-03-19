@@ -13,24 +13,18 @@ class SubscriptionCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // Format the date
     final formattedRenewalDate = DateFormat(
       'MMM dd, yyyy',
     ).format(subscription.renewalDate);
 
-    // Format the price with currency
     final formattedPrice = NumberFormat.currency(
-      symbol: '\$',
+      symbol: '\ريال ',
     ).format(subscription.price);
 
-    // Calculate days until renewal
     final daysUntilRenewal =
         subscription.renewalDate.difference(DateTime.now()).inDays;
 
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: colorScheme.surface,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -109,7 +103,7 @@ class _RenewalChip extends StatelessWidget {
       renewalText = 'Next Week';
     } else {
       chipColor = colorScheme.secondary;
-      renewalText = 'Upcoming';
+      renewalText = '${daysUntilRenewal.toString()} days';
     }
 
     return Tooltip(

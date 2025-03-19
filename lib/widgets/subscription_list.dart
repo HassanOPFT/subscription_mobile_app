@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:subscription_mobile_app/modelview/subscription_view_model.dart';
+import 'package:subscription_mobile_app/views/manage_subscription_screen.dart';
 import 'package:subscription_mobile_app/views/subscription_detail_screen.dart';
 import 'package:subscription_mobile_app/widgets/subscription_card.dart';
 import 'package:subscription_mobile_app/widgets/subscription_card_skeleton.dart';
+import 'package:subscription_mobile_app/widgets/subscriptions_cost_summary.dart';
 
-class SubscriptionListWidget extends ConsumerStatefulWidget {
-  const SubscriptionListWidget({super.key});
+class SubscriptionList extends ConsumerStatefulWidget {
+  const SubscriptionList({super.key});
 
   @override
-  ConsumerState<SubscriptionListWidget> createState() =>
+  ConsumerState<SubscriptionList> createState() =>
       _SubscriptionListWidgetState();
 }
 
-class _SubscriptionListWidgetState
-    extends ConsumerState<SubscriptionListWidget> {
+class _SubscriptionListWidgetState extends ConsumerState<SubscriptionList> {
   @override
   void initState() {
     super.initState();
@@ -29,7 +31,7 @@ class _SubscriptionListWidgetState
 
     return subscriptionState.when(
       data: (subscriptions) {
-        if (subscriptions.isEmpty) {
+        if (subscriptions.subscriptions.isEmpty) {
           return const Center(
             child: Text(
               'No subscriptions found. Add a subscription to get started.',
@@ -37,35 +39,43 @@ class _SubscriptionListWidgetState
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: subscriptions.length,
-          itemBuilder: (context, index) {
-            final subscription = subscriptions[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => SubscriptionDetailScreen(
-                          subscriptionId: subscription.id,
-                        ),
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SubscriptionCostSummary(
+                  totalMonthlyAmount: subscriptions.totalMonthlyCost,
+                  totalAnnualAmount: subscriptions.totalAnnualCost,
+                ),
+              ),
+            ),
+            SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final subscription = subscriptions.subscriptions[index];
+
+                return GestureDetector(
+                  onTap: () {
+                    context.push(
+                      SubscriptionDetailScreen.routeName,
+                      extra: subscription.id,
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SubscriptionCard(subscription: subscription),
                   ),
                 );
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: SubscriptionCard(subscription: subscription),
-              ),
-            );
-          },
+              }, childCount: subscriptions.subscriptions.length),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: 70)),
+          ],
         );
       },
       loading:
           () => ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: 5, // Show 5 skeleton items while loading
+            itemCount: 7,
             itemBuilder:
                 (context, index) => const Padding(
                   padding: EdgeInsets.only(bottom: 12),
@@ -90,7 +100,7 @@ class _SubscriptionListWidgetState
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton(
+                FilledButton(
                   onPressed: () {
                     ref.read(subscriptionProvider.notifier).loadSubscriptions();
                   },

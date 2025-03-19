@@ -1,15 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:subscription_mobile_app/repository/subscription_repository.dart';
-import '../models/subscription_model.dart';
 
-final subscriptionProvider = StateNotifierProvider<
-  SubscriptionViewModel,
-  AsyncValue<List<Subscription>>
->((ref) => SubscriptionViewModel());
+final subscriptionProvider =
+    StateNotifierProvider<SubscriptionViewModel, AsyncValue<SubscriptionData>>(
+      (ref) => SubscriptionViewModel(),
+    );
 
 class SubscriptionViewModel
-    extends StateNotifier<AsyncValue<List<Subscription>>> {
+    extends StateNotifier<AsyncValue<SubscriptionData>> {
   final SubscriptionRepository repository = SubscriptionRepository();
 
   SubscriptionViewModel() : super(const AsyncValue.loading()) {
@@ -23,21 +22,39 @@ class SubscriptionViewModel
     });
   }
 
-  Future<void> createSubscription(Subscription subscription) async {
+  Future<void> createSubscription({
+    required String name,
+    required double price,
+    required String billingCycle,
+  }) async {
     try {
-      await repository.createSubscription(subscription);
+      await repository.createSubscription(
+        name: name,
+        price: price,
+        billingCycle: billingCycle,
+      );
       await loadSubscriptions();
     } catch (e) {
-      throw Exception('Error creating subscription: $e');
+      rethrow;
     }
   }
 
-  Future<void> updateSubscription(int id, Subscription subscription) async {
+  Future<void> updateSubscription({
+    required int id,
+    required String name,
+    required double price,
+    required String billingCycle,
+  }) async {
     try {
-      await repository.updateSubscription(id, subscription);
+      await repository.updateSubscription(
+        id: id,
+        name: name,
+        price: price,
+        billingCycle: billingCycle,
+      );
       await loadSubscriptions();
     } catch (e) {
-      throw Exception('Error updating subscription: $e');
+      rethrow;
     }
   }
 
@@ -46,7 +63,7 @@ class SubscriptionViewModel
       await repository.deleteSubscription(id);
       await loadSubscriptions();
     } catch (e) {
-      throw Exception('Error deleting subscription: $e');
+      rethrow;
     }
   }
 
@@ -54,7 +71,7 @@ class SubscriptionViewModel
     try {
       return await repository.getPriceHistory(id);
     } catch (e) {
-      throw Exception('Error fetching price history: $e');
+      rethrow;
     }
   }
 
@@ -63,7 +80,7 @@ class SubscriptionViewModel
       await repository.bulkCreateSubscription(file);
       await loadSubscriptions();
     } catch (e) {
-      throw Exception('Error bulk creating subscriptions: $e');
+      rethrow;
     }
   }
 }

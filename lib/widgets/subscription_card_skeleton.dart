@@ -67,18 +67,18 @@ class _SkeletonContainer extends StatefulWidget {
   final Color shimmerColor;
 
   const _SkeletonContainer({
-    Key? key,
     required this.width,
     required this.height,
     required this.skeletonColor,
     required this.shimmerColor,
-  }) : super(key: key);
+  });
 
   @override
   State<_SkeletonContainer> createState() => _SkeletonContainerState();
 }
 
-class _SkeletonContainerState extends State<_SkeletonContainer> with SingleTickerProviderStateMixin {
+class _SkeletonContainerState extends State<_SkeletonContainer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Color?> _colorAnimation;
 
@@ -89,7 +89,7 @@ class _SkeletonContainerState extends State<_SkeletonContainer> with SingleTicke
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat(reverse: true);
-    
+
     _colorAnimation = ColorTween(
       begin: widget.skeletonColor,
       end: widget.shimmerColor,

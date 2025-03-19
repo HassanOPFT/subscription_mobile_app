@@ -14,12 +14,12 @@ class PriceHistoryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Process the price history data
     final List<FlSpot> spots = [];
 
     for (int i = 0; i < priceHistory.length; i++) {
       final item = priceHistory[i];
-      final price = item['price'] as double;
+      // Fix here: Parse string to double instead of direct casting
+      final price = _parsePrice(item['new_price']);
       spots.add(FlSpot(i.toDouble(), price));
     }
 
@@ -73,7 +73,7 @@ class PriceHistoryChart extends StatelessWidget {
                       final int index = value.toInt();
                       if (index >= 0 && index < priceHistory.length) {
                         final item = priceHistory[index];
-                        final date = DateTime.parse(item['date']);
+                        final date = DateTime.parse(item['change_date']);
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
@@ -134,7 +134,6 @@ class PriceHistoryChart extends StatelessWidget {
               ],
               lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
-                  // tooltipBgColor: colorScheme.surface,
                   tooltipRoundedRadius: 8,
                   tooltipBorder: BorderSide(
                     color: colorScheme.primary,
@@ -146,8 +145,9 @@ class PriceHistoryChart extends StatelessWidget {
                       final index = barSpot.x.toInt();
                       if (index >= 0 && index < priceHistory.length) {
                         final item = priceHistory[index];
-                        final date = DateTime.parse(item['date']);
-                        final price = item['price'] as double;
+                        final date = DateTime.parse(item['change_date']);
+                        // Fix here: Parse string to double instead of direct casting
+                        final price = _parsePrice(item['new_price']);
                         return LineTooltipItem(
                           '${DateFormat('MMM dd, yyyy').format(date)}\n',
                           TextStyle(
@@ -199,6 +199,18 @@ class PriceHistoryChart extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // Helper method to safely parse price values
+  double _parsePrice(dynamic price) {
+    if (price is double) {
+      return price;
+    } else if (price is int) {
+      return price.toDouble();
+    } else if (price is String) {
+      return double.parse(price);
+    }
+    return 0.0; // Default value if parsing fails
   }
 
   double _getMinY(List<FlSpot> spots) {

@@ -1,11 +1,17 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:subscription_mobile_app/modelview/subscription_view_model.dart';
-import 'package:subscription_mobile_app/widgets/price_history_chart.dart';
+import 'package:subscription_mobile_app/views/manage_subscription_screen.dart';
+import 'package:subscription_mobile_app/views/subscriptions_screen.dart';
+import 'package:subscription_mobile_app/widgets/subscription_price_history.dart';
 import '../models/subscription_model.dart';
 
 class SubscriptionDetailScreen extends ConsumerStatefulWidget {
+  static const routeName = '/subscription-detail';
   final int subscriptionId;
 
   const SubscriptionDetailScreen({super.key, required this.subscriptionId});
@@ -55,7 +61,7 @@ class _SubscriptionDetailScreenState
     final subscriptionState = ref.watch(subscriptionProvider);
     final subscription = subscriptionState.when(
       data: (subscriptions) {
-        return subscriptions.firstWhere(
+        return subscriptions.subscriptions.firstWhere(
           (sub) => sub.id == widget.subscriptionId,
           orElse:
               () => Subscription(
@@ -91,6 +97,61 @@ class _SubscriptionDetailScreenState
           ),
     );
 
+    void showSnackBar(String message, {bool isError = false}) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Colors.red : Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+
+    void showDeleteConfirmationDialog(
+      BuildContext context,
+      Subscription subscription,
+    ) {
+      showDialog(
+        context: context,
+        builder:
+            (ctx) => AlertDialog(
+              title: Text('Delete ${subscription.name}?'),
+              content: Text(
+                'This action cannot be undone. Are you sure you want to delete this subscription?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  onPressed: () async {
+                    try {
+                      Navigator.of(ctx).pop();
+                      await ref
+                          .read(subscriptionProvider.notifier)
+                          .deleteSubscription(subscription.id);
+
+                      context.go(SubscriptionsScreen.routeName);
+
+                      showSnackBar('Subscription deleted successfully');
+                    } catch (e) {
+                      Navigator.of(ctx).pop();
+
+                      showSnackBar(
+                        'Failed to delete subscription',
+                        isError: true,
+                      );
+                    }
+                  },
+                  child: const Text('Delete'),
+                ),
+              ],
+            ),
+      );
+    }
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -99,11 +160,9 @@ class _SubscriptionDetailScreenState
         title: Text(subscription.name),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              // Navigate to edit screen
-              // You can implement this later
-            },
+            icon: const Icon(Icons.delete, color: Colors.redAccent),
+            onPressed:
+                () => showDeleteConfirmationDialog(context, subscription),
           ),
         ],
       ),
@@ -117,27 +176,27 @@ class _SubscriptionDetailScreenState
               )
               : SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 70),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Subscription details card
                       _SubscriptionDetailCard(
                         subscription: subscription,
                         colorScheme: colorScheme,
                       ),
                       const SizedBox(height: 24),
 
-                      // Price history section
-                      Text(
-                        'Price History',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          'Price History',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Price history chart
                       if (_isLoading)
                         const Center(child: CircularProgressIndicator())
                       else if (_error != null)
@@ -162,25 +221,21 @@ class _SubscriptionDetailScreenState
                             ],
                           ),
                         )
-                      else if (_priceHistory.isEmpty)
-                        Center(
-                          child: Text(
-                            'No price history available',
-                            style: theme.textTheme.bodyLarge,
-                          ),
-                        )
                       else
-                        SizedBox(
-                          height: 300,
-                          child: PriceHistoryChart(
-                            priceHistory: _priceHistory,
-                            colorScheme: colorScheme,
-                          ),
+                        SubscriptionPriceHistory(
+                          priceHistory: _priceHistory,
+                          colorScheme: colorScheme,
                         ),
                     ],
                   ),
                 ),
               ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          context.push(ManageSubscriptionScreen.routeName, extra: subscription);
+        },
+        child: Icon(Icons.edit),
+      ),
     );
   }
 }
@@ -200,25 +255,27 @@ class _SubscriptionDetailCard extends StatelessWidget {
     final textTheme = theme.textTheme;
 
     final formattedPrice = NumberFormat.currency(
-      symbol: '\$',
+      symbol: '\ريال ',
     ).format(subscription.price);
+
     final formattedRenewalDate = DateFormat(
       'MMMM dd, yyyy',
     ).format(subscription.renewalDate);
+
     final formattedCreatedAt = DateFormat(
       'MMMM dd, yyyy',
     ).format(subscription.createdAt);
+
     final formattedUpdatedAt = DateFormat(
       'MMMM dd, yyyy',
     ).format(subscription.updatedAt);
 
-    // Calculate yearly cost
     final yearlyCost = _calculateYearlyCost(
       subscription.price,
       subscription.billingCycle,
     );
     final formattedYearlyCost = NumberFormat.currency(
-      symbol: '\$',
+      symbol: '\ ريال',
     ).format(yearlyCost);
 
     return Card(
@@ -274,7 +331,6 @@ class _SubscriptionDetailCard extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Renewal date section
             _DetailItem(
               icon: Icons.calendar_today,
               label: 'Next Renewal',
@@ -283,7 +339,6 @@ class _SubscriptionDetailCard extends StatelessWidget {
             ),
             const Divider(height: 24),
 
-            // Yearly cost section
             _DetailItem(
               icon: Icons.savings,
               label: 'Yearly Cost',
@@ -292,7 +347,6 @@ class _SubscriptionDetailCard extends StatelessWidget {
             ),
             const Divider(height: 24),
 
-            // Creation date
             _DetailItem(
               icon: Icons.access_time,
               label: 'Created',
@@ -301,7 +355,6 @@ class _SubscriptionDetailCard extends StatelessWidget {
             ),
             const Divider(height: 24),
 
-            // Last updated
             _DetailItem(
               icon: Icons.update,
               label: 'Last Updated',
@@ -318,20 +371,10 @@ class _SubscriptionDetailCard extends StatelessWidget {
     switch (billingCycle.toLowerCase()) {
       case 'monthly':
         return price * 12;
-      case 'quarterly':
-        return price * 4;
-      case 'semi-annually':
-      case 'semiannually':
-      case 'half-yearly':
-        return price * 2;
-      case 'annually':
+
       case 'yearly':
         return price;
-      case 'weekly':
-        return price * 52;
-      case 'bi-weekly':
-      case 'biweekly':
-        return price * 26;
+
       default:
         return price * 12;
     }

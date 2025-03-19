@@ -2,53 +2,96 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:subscription_mobile_app/models/subscription_model.dart';
 
-class SubscriptionRepository {
-  final String baseUrl = "http://127.0.0.1:8000/api/subscriptions/";
+class SubscriptionData {
+  final List<Subscription> subscriptions;
+  final double totalMonthlyCost;
+  final double totalAnnualCost;
 
-  Future<List<Subscription>> getSubscriptions() async {
+  SubscriptionData({
+    required this.subscriptions,
+    required this.totalMonthlyCost,
+    required this.totalAnnualCost,
+  });
+}
+
+class SubscriptionRepository {
+  final String baseUrl = "http://10.0.2.2:8000/api/subscriptions/";
+
+  Future<SubscriptionData> getSubscriptions() async {
     try {
       final response = await http.get(Uri.parse(baseUrl));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body)['data'] as List;
-        return data.map((e) => Subscription.fromJson(e)).toList();
+
+        final double totalMonthlyCost =
+            json.decode(response.body)['total_monthly_cost'];
+
+        final double totalAnnualCost =
+            json.decode(response.body)['total_annual_cost'];
+
+        final subscriptions =
+            data.map((e) => Subscription.fromJson(e)).toList();
+
+        return SubscriptionData(
+          subscriptions: subscriptions,
+          totalMonthlyCost: totalMonthlyCost,
+          totalAnnualCost: totalAnnualCost,
+        );
       } else {
         throw Exception("Failed to load subscriptions");
       }
     } catch (e) {
-      throw Exception("Error: $e");
+      rethrow;
     }
   }
 
-  Future<void> createSubscription(Subscription subscription) async {
+  Future<void> createSubscription({
+    required String name,
+    required double price,
+    required String billingCycle,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse(baseUrl),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(subscription.toJson()),
+        body: jsonEncode({
+          'name': name,
+          'price': price,
+          'billing_cycle': billingCycle,
+        }),
       );
 
       if (response.statusCode != 201) {
         throw Exception("Failed to create subscription");
       }
     } catch (e) {
-      throw Exception("Error: $e");
+      rethrow;
     }
   }
 
-  Future<void> updateSubscription(int id, Subscription subscription) async {
+  Future<void> updateSubscription({
+    required int id,
+    required String name,
+    required double price,
+    required String billingCycle,
+  }) async {
     try {
       final response = await http.patch(
         Uri.parse("$baseUrl$id/"),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(subscription.toJson()),
+        body: jsonEncode({
+          'name': name,
+          'price': price,
+          'billing_cycle': billingCycle,
+        }),
       );
 
       if (response.statusCode != 200) {
         throw Exception("Failed to update subscription");
       }
     } catch (e) {
-      throw Exception("Error: $e");
+      rethrow;
     }
   }
 
@@ -56,18 +99,18 @@ class SubscriptionRepository {
     try {
       final response = await http.delete(Uri.parse("$baseUrl$id/"));
 
-      if (response.statusCode != 204) {
+      if (response.statusCode != 200) {
         throw Exception("Failed to delete subscription");
       }
     } catch (e) {
-      throw Exception("Error: $e");
+      rethrow;
     }
   }
 
   Future<List<dynamic>> getPriceHistory(int id) async {
     try {
       final response = await http.get(
-        Uri.parse("http://127.0.0.1:8000/api/price-history/$id/"),
+        Uri.parse("http://10.0.2.2:8000/api/price-history/$id/"),
       );
 
       if (response.statusCode == 200) {
@@ -76,7 +119,7 @@ class SubscriptionRepository {
         throw Exception("Failed to load price history");
       }
     } catch (e) {
-      throw Exception("Error: $e");
+      rethrow;
     }
   }
 
@@ -84,7 +127,7 @@ class SubscriptionRepository {
     try {
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse("http://127.0.0.1:8000/api/subscriptions/csv-upload/"),
+        Uri.parse("http://10.0.2.2:8000/api/subscriptions/csv-upload/"),
       );
       request.files.add(file);
 
@@ -94,7 +137,7 @@ class SubscriptionRepository {
         throw Exception("Failed to bulk create subscriptions");
       }
     } catch (e) {
-      throw Exception("Error: $e");
+      rethrow;
     }
   }
 }
