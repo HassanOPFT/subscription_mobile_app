@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:subscription_mobile_app/modelview/subscription_view_model.dart';
-import 'package:subscription_mobile_app/views/manage_subscription_screen.dart';
 import 'package:subscription_mobile_app/views/subscription_detail_screen.dart';
 import 'package:subscription_mobile_app/widgets/subscription_card.dart';
 import 'package:subscription_mobile_app/widgets/subscription_card_skeleton.dart';

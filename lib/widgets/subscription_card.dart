@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:subscription_mobile_app/widgets/subscriptions_savings.dart';
 import '../models/subscription_model.dart';
 
 class SubscriptionCard extends StatelessWidget {
@@ -25,6 +26,7 @@ class SubscriptionCard extends StatelessWidget {
         subscription.renewalDate.difference(DateTime.now()).inDays;
 
     return Card(
+      margin: EdgeInsets.symmetric(horizontal: 12),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -57,11 +59,21 @@ class SubscriptionCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  subscription.billingCycle,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      subscription.billingCycle.capitalize(),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      ' • Renews on ${DateFormat.yMMMd().format(subscription.renewalDate)}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
                 _RenewalChip(
                   daysUntilRenewal: daysUntilRenewal,

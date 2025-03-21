@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:subscription_mobile_app/views/home_screen.dart';
+import 'package:subscription_mobile_app/views/dashboard_screen.dart';
 import 'package:subscription_mobile_app/views/subscriptions_screen.dart';
 
 final List<String> mainScreenRoutes = [
-  HomeScreen.routeName,
+  DashboardScreen.routeName,
   SubscriptionsScreen.routeName,
 ];
 
